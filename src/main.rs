@@ -1,7 +1,12 @@
 use exif::{Exif, In, Tag, Value};
+use std::io::Seek;
 use std::{env, fs::OpenOptions};
 
 extern crate exif;
+extern crate image;
+
+use image::ImageFormat;
+
 fn main() {
     for path in env::args().skip(1) {
         let file = match OpenOptions::new().read(true).write(true).open(&path) {
@@ -20,8 +25,37 @@ fn main() {
                 return;
             }
         };
+        let orientation = get_orientation_value(&exif);
+        println!("orientation is {}", orientation);
 
-        println!("orientation is {}", get_orientation_value(&exif));
+        //Reset fp to the beginning; otherwise loading fails
+        bufreader.seek(std::io::SeekFrom::Start(0));
+
+        match image::load(bufreader, ImageFormat::Jpeg) {
+            Ok(image) => match orientation {
+                1 | 2 | 4 | 5 | 7 => {
+                    println!("orientation looks cool already!");
+                }
+                8 => {
+                    println!("rotating 270 degrees ...");
+                    image.rotate270();
+                }
+                3 => {
+                    println!("rotating 180 degrees ...");
+                    image.rotate180();
+                }
+                6 => {
+                    println!("rotating 90 degrees ...");
+                    image.rotate90();
+                }
+                _ => {
+                    println!("invalid orientation found :(");
+                }
+            },
+            _ => {
+                println!("error loading image. this tool works with valid jpeg images.");
+            }
+        }
     }
 }
 
