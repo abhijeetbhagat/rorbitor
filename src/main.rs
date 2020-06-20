@@ -6,6 +6,7 @@ use async_std::task;
 use futures::future::join_all;
 use rotator::JPEGRotator;
 use std::env;
+use std::io::Error;
 use std::time::Instant;
 
 #[async_std::main]
@@ -14,7 +15,11 @@ async fn main() {
     let now = Instant::now();
     for path in env::args().skip(1) {
         futures_list.push(task::spawn(async move {
-            JPEGRotator::run_rotation(path.clone()).await;
+            let rotator = JPEGRotator::new(path)?;
+            if let Err(e) = rotator.rotate().await {
+                println!("an error occurred - {}", e);
+            }
+            Ok::<(), Error>(())
         }));
     }
 

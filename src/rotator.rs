@@ -3,7 +3,7 @@ extern crate image;
 
 use crate::utils;
 use exif::{Exif, In, Tag, Value};
-use image::ImageFormat;
+use image::{DynamicImage, ImageFormat};
 use std::io::{Error, Seek};
 use std::{
     fs::{File, OpenOptions},
@@ -22,34 +22,16 @@ pub struct JPEGRotator {
 impl JPEGRotator {
     pub fn new(path: String) -> Result<Self, Error> {
         let file = OpenOptions::new().read(true).write(true).open(&path)?;
-        //.map_err(|e| Err(String::from("error opening the file")))?;
 
         Ok(JPEGRotator { path, file })
     }
 
-    pub async fn run_rotation(path: String) {
-        let path = &Path::new(&path);
-        let file = match OpenOptions::new().read(true).write(true).open(&path) {
-            Ok(file) => file,
-            Err(e) => {
-                println!("error occurred during opening file: {}", e);
-                return;
-            }
-        };
-        let mut bufreader = std::io::BufReader::new(&file);
-        let exifreader = exif::Reader::new();
-        let exif = match exifreader.read_from_container(&mut bufreader) {
-            Ok(exif) => exif,
-            Err(e) => {
-                println!("couldn't parse exif information: {}", e);
-                return;
-            }
-        };
+    pub async fn rotate(&self) -> Result<(), String> {
+        let exif = utils::get_exif(&self.file)?;
         let orientation = utils::get_orientation_value(&exif);
         println!("orientation is {}", orientation);
 
-        //Reset fp to the beginning; otherwise loading fails
-        bufreader.seek(std::io::SeekFrom::Start(0));
+        let bufreader = std::io::BufReader::new(&self.file);
 
         let rotated_image = match image::load(bufreader, ImageFormat::Jpeg) {
             Ok(image) => match orientation {
@@ -81,21 +63,20 @@ impl JPEGRotator {
         };
 
         if let Some(image) = rotated_image {
-            let path = format!(
-                "./images-test/images/rotated_{}",
-                path.file_name().unwrap().to_str().unwrap()
-            );
-            let path = Path::new(&path);
+            self.save(image);
+        }
 
-            println!("creating a file with path {:?}", path);
-            let _ = std::fs::File::create(&path).unwrap();
+        Ok(())
+    }
 
-            match image.save(path) {
-                Ok(_) => println!("saved file!"),
-                Err(e) => println!("error saving file {}", e),
+    fn save(&self, image: DynamicImage) {
+        println!("image buf starts with {:?}", &image.to_bytes()[..10]);
+
+        match image.save(&self.path) {
+            Ok(_) => {
+                println!("{}: saved file!", self.path);
             }
-        } else {
-            println!("no processing done on current file.");
+            Err(e) => println!("{}: error saving file {}", e, self.path),
         }
     }
 }
