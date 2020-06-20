@@ -1,4 +1,3 @@
-extern crate exif;
 extern crate image;
 
 use crate::utils;
@@ -31,7 +30,7 @@ impl JPEGRotator {
         println!("processing file: {}", self.path);
         let exif = utils::get_exif(&self.file)?;
         let orientation = utils::get_orientation_value(&exif);
-        println!("orientation is {}", orientation);
+        println!("{}: orientation is {}", self.path, orientation);
 
         if let Some(image) = self.perform_rotation(orientation) {
             let _exif = utils::get_orientation_fixed_exif(&exif);
@@ -81,8 +80,6 @@ impl JPEGRotator {
 
     /// Saves the rotated image to the same file
     fn save(&self, image: DynamicImage) {
-        println!("image buf starts with {:?}", &image.to_bytes()[..10]);
-
         match image.save(&self.path) {
             Ok(_) => {
                 println!("{}: saved file!", self.path);
