@@ -34,3 +34,21 @@ pub fn get_orientation_value(exif: &Exif) -> u16 {
         _ => 0u16,
     }
 }
+
+/// Returns a vector of bytes representing the whole EXIF data
+/// with updated orientation value of 1.
+/// This should be really handled by the image library but ...
+pub fn get_orientation_fixed_exif(exif: &Exif) -> Vec<u8> {
+    let mut buf = vec![0xffu8, 0xe1, 0x0, exif.buf().len() as u8];
+    buf.extend_from_slice(b"EXIF\0\0");
+    buf.extend_from_slice(exif.buf());
+    let orientation_offset = buf[16..]
+        .chunks(2)
+        .position(|a| a[0] == 0x1 && a[1] == 0x12)
+        .unwrap();
+    //skip past exif 'header' + offset of the orientation marker bytes + offset
+    //of the actual orientation value which seems to be 9 bytes and set
+    //orientation to 1
+    buf[16 + orientation_offset + 9] = 1;
+    buf
+}

@@ -5,6 +5,8 @@ use std::io::Error;
 pub struct Ingestor;
 
 impl Ingestor {
+    /// Accepts a list of jpeg paths and spawns off async tasks to
+    /// perform rotations on them. One task handles one image rotation.
     pub async fn start(files: Vec<String>) {
         let mut futures_list = vec![];
         for path in files {

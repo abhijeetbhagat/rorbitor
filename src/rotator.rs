@@ -2,10 +2,10 @@ extern crate exif;
 extern crate image;
 
 use crate::utils;
-use exif::{Exif, In, Tag, Value};
+
 use image::{DynamicImage, ImageFormat};
 use std::fs::{File, OpenOptions};
-use std::io::{Error, Seek};
+use std::io::Error;
 
 trait Rotator {
     fn rotate(&mut self);
@@ -34,6 +34,8 @@ impl JPEGRotator {
         println!("orientation is {}", orientation);
 
         if let Some(image) = self.perform_rotation(orientation) {
+            let _exif = utils::get_orientation_fixed_exif(&exif);
+            //TODO abhi: find some way to insert EXIF data after the JFIF data
             self.save(image);
         }
 
