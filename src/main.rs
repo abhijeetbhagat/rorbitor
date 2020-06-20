@@ -1,6 +1,6 @@
 use exif::{Exif, In, Tag, Value};
 use std::io::Seek;
-use std::{env, fs::OpenOptions};
+use std::{env, fs::OpenOptions, path::Path};
 
 extern crate exif;
 extern crate image;
@@ -9,6 +9,7 @@ use image::ImageFormat;
 
 fn main() {
     for path in env::args().skip(1) {
+        let path = &Path::new(&path);
         let file = match OpenOptions::new().read(true).write(true).open(&path) {
             Ok(file) => file,
             Err(e) => {
@@ -31,30 +32,51 @@ fn main() {
         //Reset fp to the beginning; otherwise loading fails
         bufreader.seek(std::io::SeekFrom::Start(0));
 
-        match image::load(bufreader, ImageFormat::Jpeg) {
+        let rotated_image = match image::load(bufreader, ImageFormat::Jpeg) {
             Ok(image) => match orientation {
                 1 | 2 | 4 | 5 | 7 => {
                     println!("orientation looks cool already!");
+                    None
                 }
                 8 => {
                     println!("rotating 270 degrees ...");
-                    image.rotate270();
+                    Some(image.rotate270())
                 }
                 3 => {
                     println!("rotating 180 degrees ...");
-                    image.rotate180();
+                    Some(image.rotate180())
                 }
                 6 => {
                     println!("rotating 90 degrees ...");
-                    image.rotate90();
+                    Some(image.rotate90())
                 }
                 _ => {
                     println!("invalid orientation found :(");
+                    None
                 }
             },
             _ => {
                 println!("error loading image. this tool works with valid jpeg images.");
+                None
             }
+        };
+
+        if let Some(image) = rotated_image {
+            let path = format!(
+                "./images-test/images/rotated_{}",
+                path.file_name().unwrap().to_str().unwrap()
+            );
+            let path = Path::new(&path);
+
+            println!("creating a file with path {:?}", path);
+            let _ = std::fs::File::create(&path).unwrap();
+
+            match image.save(path) {
+                Ok(_) => println!("saved file!"),
+                Err(e) => println!("error saving file {}", e),
+            }
+        } else {
+            println!("no processing done on current file.");
         }
     }
 }
