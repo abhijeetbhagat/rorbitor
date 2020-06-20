@@ -6,7 +6,7 @@ use image::ImageFormat;
 use std::io::Seek;
 use std::{fs::OpenOptions, path::Path};
 
-pub fn run_rotation(path: String) {
+pub async fn run_rotation(path: String) {
     let path = &Path::new(&path);
     let file = match OpenOptions::new().read(true).write(true).open(&path) {
         Ok(file) => file,
