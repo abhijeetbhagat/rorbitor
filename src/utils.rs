@@ -2,6 +2,8 @@ use exif::{Exif, In, Tag, Value};
 use std::fs::File;
 use std::io::Seek;
 
+/// Reads EXIF data from the given file and returns orientation value
+/// as an unsigned short.
 pub fn get_exif(file: &File) -> Result<Exif, String> {
     let orientation = {
         let mut bufreader = std::io::BufReader::new(file);
@@ -24,6 +26,7 @@ pub fn get_exif(file: &File) -> Result<Exif, String> {
     Ok(orientation)
 }
 
+/// Gets orientation value as an unsigned short from an Exif reference
 pub fn get_orientation_value(exif: &Exif) -> u16 {
     let f = exif.get_field(Tag::Orientation, In::PRIMARY).unwrap();
     match &f.value {
