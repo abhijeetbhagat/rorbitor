@@ -1,9 +1,10 @@
 extern crate exif;
 extern crate image;
 
+use crate::utils;
 use exif::{Exif, In, Tag, Value};
 use image::ImageFormat;
-use std::io::Seek;
+use std::io::{Error, Seek};
 use std::{
     fs::{File, OpenOptions},
     path::Path,
@@ -13,9 +14,19 @@ trait Rotator {
     fn rotate(&mut self);
 }
 //use exif
-pub struct JPEGRotator;
+pub struct JPEGRotator {
+    path: String,
+    file: File,
+}
 
 impl JPEGRotator {
+    pub fn new(path: String) -> Result<Self, Error> {
+        let file = OpenOptions::new().read(true).write(true).open(&path)?;
+        //.map_err(|e| Err(String::from("error opening the file")))?;
+
+        Ok(JPEGRotator { path, file })
+    }
+
     pub async fn run_rotation(path: String) {
         let path = &Path::new(&path);
         let file = match OpenOptions::new().read(true).write(true).open(&path) {
@@ -34,7 +45,7 @@ impl JPEGRotator {
                 return;
             }
         };
-        let orientation = Self::get_orientation_value(&exif);
+        let orientation = utils::get_orientation_value(&exif);
         println!("orientation is {}", orientation);
 
         //Reset fp to the beginning; otherwise loading fails
@@ -85,14 +96,6 @@ impl JPEGRotator {
             }
         } else {
             println!("no processing done on current file.");
-        }
-    }
-
-    fn get_orientation_value(exif: &Exif) -> u16 {
-        let f = exif.get_field(Tag::Orientation, In::PRIMARY).unwrap();
-        match &f.value {
-            Value::Short(v) => v[0],
-            _ => 0u16,
         }
     }
 }

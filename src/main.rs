@@ -1,5 +1,7 @@
 extern crate async_std;
 pub mod rotator;
+pub mod utils;
+
 use async_std::task;
 use futures::future::join_all;
 use rotator::JPEGRotator;
