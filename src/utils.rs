@@ -1,10 +1,9 @@
 use exif::{Exif, In, Tag, Value};
-use std::fs::File;
 use std::io::Seek;
 
 /// Reads EXIF data from the given file and returns orientation value
 /// as an unsigned short.
-pub fn get_exif(file: &File) -> Result<Exif, String> {
+pub fn get_exif<R: std::io::Read + std::io::Seek>(file: R) -> Result<Exif, String> {
     let orientation = {
         let mut bufreader = std::io::BufReader::new(file);
         let exifreader = exif::Reader::new();
